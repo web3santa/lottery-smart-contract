@@ -7,6 +7,10 @@ import {Test, console} from "forge-std/Test.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract RaffleTest is Test {
+    // events
+    event EnteredRaffle(address indexed player);
+    event WinnerPicked(address indexed winner);
+
     Raffle raffle;
     HelperConfig helperConfig;
     uint256 entranceFee;
@@ -15,6 +19,7 @@ contract RaffleTest is Test {
     bytes32 gasLane;
     uint64 subscriptionId;
     uint32 callbackGasLimit;
+    address link;
 
     address public PLAYER = makeAddr("player");
     uint256 public constant STARTING_BALANCE = 10 ether;
@@ -29,7 +34,8 @@ contract RaffleTest is Test {
             vrfCoordinator,
             gasLane,
             subscriptionId,
-            callbackGasLimit
+            callbackGasLimit,
+            link
         ) = helperConfig.activeNetworkConfig();
         vm.deal(PLAYER, STARTING_BALANCE);
     }
@@ -39,4 +45,45 @@ contract RaffleTest is Test {
     }
 
     // enterRaffle //
+    function testRaffleRevertsWhenYouDontPayEnough() public {
+        vm.prank(PLAYER);
+        vm.expectRevert(Raffle.Raffle__NotEnoughETH.selector);
+
+        raffle.enterRaffle();
+    }
+
+    function testRaffleRecordsPlayerWhenTheyEnter() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+
+        address play = raffle.getPlayerList(0);
+
+        assertEq(play, PLAYER);
+    }
+
+    function testEmitsEventOnEntrance() public {
+        vm.expectEmit(true, false, false, false, address(raffle));
+
+        vm.prank(PLAYER);
+
+        emit EnteredRaffle(PLAYER);
+
+        raffle.enterRaffle{value: entranceFee}();
+    }
+
+    function testCantEnterWhenRaffleIsCalculating() public {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.performUpkeep("");
+
+        vm.expectRevert(Raffle.Raffle__NotOpened.selector);
+
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: entranceFee}();
+
+        // raffle.enterRaffle{value: entranceFee}();
+    }
 }
