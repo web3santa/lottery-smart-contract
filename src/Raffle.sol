@@ -3,7 +3,6 @@ pragma solidity 0.8.18;
 
 import {VRFCoordinatorV2Interface} from "../lib/chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "../lib/chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
-import {VRFCoordinatorV2Mock} from "lib/chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2Mock.sol";
 
 /**
  * @title A sample Raffle Contract
@@ -30,7 +29,6 @@ contract Raffle is VRFConsumerBaseV2 {
     VRFCoordinatorV2Interface COORDINATOR;
 
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
-
     uint32 private constant NUM_WORDS = 1;
 
     uint256 private immutable i_entranceFee;
@@ -48,6 +46,7 @@ contract Raffle is VRFConsumerBaseV2 {
     // events
     event EnteredRaffle(address indexed player);
     event WinnerPicked(address indexed winner);
+    event RequesTedRaffleWinner(uint256 indexed requestId);
 
     constructor(
         uint256 entranceFee,
@@ -97,7 +96,7 @@ contract Raffle is VRFConsumerBaseV2 {
         bool hasPlayers = s_players.length > 0;
         upkeepNeeded = (timeHasPassed && isOpen && hasBalance && hasPlayers);
 
-        return (upkeepNeeded, "0x0");
+        return (upkeepNeeded, "0x");
     }
 
     function performUpkeep(bytes calldata /* performData */) public {
@@ -112,7 +111,7 @@ contract Raffle is VRFConsumerBaseV2 {
         _s_raffleState = RaffleState.CALCULATING;
 
         // 1. request the RNG
-        COORDINATOR.requestRandomWords(
+        uint256 requestId = COORDINATOR.requestRandomWords(
             i_gasLane, // gas lane
             i_subscriptionId, //
             REQUEST_CONFIRMATIONS, //
@@ -120,6 +119,9 @@ contract Raffle is VRFConsumerBaseV2 {
             NUM_WORDS
         );
         // 2. get the random number
+
+        // emit is important beacuse it is recoarding in blockchain
+        emit RequesTedRaffleWinner(requestId);
     }
 
     // cei check effect interaction
@@ -154,5 +156,17 @@ contract Raffle is VRFConsumerBaseV2 {
 
     function getRaffleState() external view returns (RaffleState) {
         return _s_raffleState;
+    }
+
+    function getRecentWinner() external view returns (address) {
+        return s_recentWinner;
+    }
+
+    function getPlayerLenth() external view returns (uint256) {
+        return s_players.length;
+    }
+
+    function getLastTimeStamp() external view returns (uint256) {
+        return s_lastTimeStamp;
     }
 }
