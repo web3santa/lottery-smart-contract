@@ -11,7 +11,8 @@ contract HelperConfig is Script {
 
     uint256 public constant DEFAULT_ANVIL_KEY =
         0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-
+    uint256 public constant Seploia_key =
+        0xb07c1e2ef3558e2b28dbf717e0d23c0b57c78d7ba010297df73143f063e9fe98;
     struct NetworkConfig {
         uint256 entranceFee;
         uint256 interval;
@@ -32,8 +33,6 @@ contract HelperConfig is Script {
     }
 
     function getSpoliaEthConfig() public view returns (NetworkConfig memory) {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-
         return
             NetworkConfig({
                 entranceFee: 0.01 ether,
@@ -43,7 +42,7 @@ contract HelperConfig is Script {
                 subscriptionId: 10872, // update this with our subId!
                 callbackGasLimit: 500000, // 500,000 gas!
                 link: 0x779877A7B0D9E8603169DdbD7836e478b4624789,
-                deployerKey: deployerPrivateKey
+                deployerKey: Seploia_key
             });
     }
 
